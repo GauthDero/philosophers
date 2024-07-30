@@ -6,15 +6,16 @@
 #    By: gdero <gdero@student.s19.be>               +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/03/06 16:07:27 by gdero             #+#    #+#              #
-#    Updated: 2024/07/23 19:42:06 by gdero            ###   ########.fr        #
+#    Updated: 2024/07/29 20:26:02 by gdero            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 SRCS = philo.c \
-		fill_struct.c \
+		struct.c \
 		thread_function.c \
 		monitoring.c \
-		time_gestion.c
+		time_gestion.c \
+		utils.c
 
 OBJECTS = $(SRCS:.c=.o)
 

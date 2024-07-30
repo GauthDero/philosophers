@@ -1,4 +1,24 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   time_gestion.c                                     :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: gdero <gdero@student.s19.be>               +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/29 18:11:09 by gdero             #+#    #+#             */
+/*   Updated: 2024/07/30 18:29:50 by gdero            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "philo.h"
+
+void	ft_death(t_philo *philo)
+{
+	*philo->death_status = true;
+	pthread_mutex_lock(philo->writing);
+	printf("%lu %zu died\n", get_time(philo), philo->nb_philo);
+	pthread_mutex_unlock(philo->writing);
+}
 
 size_t	get_time_now(void)
 {
@@ -18,15 +38,7 @@ size_t	get_time(t_philo *philo)
 	return (time - philo->start);
 }
 
-void	ft_death(t_philo *philo)
-{
-	*philo->death_status = true;
-	pthread_mutex_lock(philo->writing);
-	printf("%lu %zu died\n", get_time(philo), philo->nb_philo);
-	pthread_mutex_unlock(philo->writing);
-}
-
-int	ft_usleep(size_t time)
+int	sleeping_beauty(size_t time)
 {
 	size_t	start;
 

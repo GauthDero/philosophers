@@ -6,116 +6,66 @@
 /*   By: gdero <gdero@student.s19.be>               +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/20 19:42:25 by gdero             #+#    #+#             */
-/*   Updated: 2024/07/25 17:50:30 by gdero            ###   ########.fr       */
+/*   Updated: 2024/07/30 18:30:15 by gdero            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
 
-bool	one_philo(t_philo *philo)
-{
-	if (philo->total_philo == 1)
-	{
-		printf("%lu %zu has taken a fork\n", get_time(philo), philo->nb_philo);
-		ft_usleep(philo->death_time);
-		return (true);
-	}
-	return (false);
-}
-
-bool	check_death(t_philo *philo)
-{
-	if (*philo->death_status == true)
-		return (true);
-	return (false);
-}
-
-void	meal_time(t_philo *philo)
+static void	meal_time(t_philo *philo)
 {
 	pthread_mutex_lock(philo->meal);
-	philo->eating = true;
 	philo->time_since_eaten = get_time_now();
 	philo->meals_eaten++;
 	if (philo->meals_eaten >= philo->meals_to_eat)
 		philo->eaten_enough = 1;
 	pthread_mutex_unlock(philo->meal);
-	philo->eating = false;
-	ft_usleep(philo->eat_time);
+	sleeping_beauty(philo->eat_time);
 }
 
-bool	death_and_write(t_philo *philo)
+static bool	print_message(t_philo *philo, char *msg, int condition)
 {
-	if (*philo->death_status == true)
-	{
-		pthread_mutex_unlock(philo->writing);
-		return (true);
-	}
-	return (false);
+	pthread_mutex_lock(philo->writing);
+	if (death_and_write(philo, condition))
+		return (false);
+	printf("%lu %zu %s\n", get_time(philo), philo->nb_philo, msg);
+	pthread_mutex_unlock(philo->writing);
+	return (true);
 }
 
-bool	eating(t_philo *philo)
+static bool	eating(t_philo *philo)
 {
 	pthread_mutex_lock(philo->l_utensil);
+	if (!print_message(philo, FORK, 1))
+		return (false);
 	if (*philo->death_status == true)
-		return (true);
-	pthread_mutex_lock(philo->writing);
-	if (death_and_write(philo))
-		return (true);
-	printf("%lu %zu has taken a fork\n", get_time(philo), philo->nb_philo);
-	pthread_mutex_unlock(philo->writing);
-	if (*philo->death_status == true)
-		return (true);
+		return (false);
 	pthread_mutex_lock(philo->r_utensil);
 	if (*philo->death_status == true)
 	{
 		pthread_mutex_unlock(philo->l_utensil);
 		pthread_mutex_unlock(philo->r_utensil);
-		return (true);
+		return (false);
 	}
-	pthread_mutex_lock(philo->writing);
-	if (death_and_write(philo))
-	{
-		pthread_mutex_unlock(philo->l_utensil);
-		pthread_mutex_unlock(philo->r_utensil);
-		return (true);
-	}
-	printf("%lu %zu has taken a fork\n", get_time(philo), philo->nb_philo);
-	printf("%lu %zu is eating\n", get_time(philo), philo->nb_philo);
-	pthread_mutex_unlock(philo->writing);
-	if (*philo->death_status == true)
-	{
-		pthread_mutex_unlock(philo->l_utensil);
-		pthread_mutex_unlock(philo->r_utensil);
-		return (true);
-	}
+	if (!print_message(philo, FORK, 2))
+		return (false);
+	if (!print_message(philo, EAT, 2))
+		return (false);
 	meal_time(philo);
 	pthread_mutex_unlock(philo->l_utensil);
 	pthread_mutex_unlock(philo->r_utensil);
-	return (false);
+	return (true);
 }
 
-bool	sleeping(t_philo *philo)
+static bool	sleeping(t_philo *philo)
 {
-	pthread_mutex_lock(philo->writing);
-	if (death_and_write(philo))
-		return (true);
-	printf("%lu %zu is sleeping\n", get_time(philo), philo->nb_philo);
-	pthread_mutex_unlock(philo->writing);
-	ft_usleep(philo->sleep_time);
-	return (false);
+	if (!print_message(philo, SLEEP, 0))
+		return (false);
+	sleeping_beauty(philo->sleep_time);
+	return (true);
 }
 
-bool	thinking(t_philo *philo)
-{
-	pthread_mutex_lock(philo->writing);
-	if (death_and_write(philo))
-		return (true);
-	printf("%lu %zu is thinking\n", get_time(philo), philo->nb_philo);
-	pthread_mutex_unlock(philo->writing);
-	return (false);
-}
-
-void	*function(void *data_philo)
+void	*philo_function(void *data_philo)
 {
 	t_philo	*input;
 
@@ -129,17 +79,15 @@ void	*function(void *data_philo)
 		return ((void *)0);
 	while (*input->death_status != true)
 	{
-		if (*input->death_status == true)
-			return ((void *)0);
-		if (eating(input))
+		if (!eating(input))
 			return ((void *)0);
 		if (*input->death_status == true)
 			return ((void *)0);
-		if (sleeping(input))
+		if (!sleeping(input))
 			return ((void *)0);
 		if (*input->death_status == true)
 			return ((void *)0);
-		if (thinking(input))
+		if (!print_message(input, THINK, 0))
 			return ((void *)0);
 	}
 	return ((void *)0);
